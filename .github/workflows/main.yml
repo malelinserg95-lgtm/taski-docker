@@ -137,8 +137,8 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: "docker-compose.production.yml"
-          target: "taski"
+          source: docker-compose.production.yml
+          target: taski
 
       - name: Deploy on server via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -149,24 +149,15 @@ jobs:
           script: |
             cd taski
 
-          sudo docker compose \
-            -f docker-compose.production.yml pull
+            sudo docker compose -f docker-compose.production.yml pull
+            sudo docker compose -f docker-compose.production.yml down
+            sudo docker compose -f docker-compose.production.yml up -d
 
-          sudo docker compose \
-            -f docker-compose.production.yml down
+            sudo docker compose -f docker-compose.production.yml exec backend \
+              python manage.py migrate
 
-          sudo docker compose \
-            -f docker-compose.production.yml up -d
+            sudo docker compose -f docker-compose.production.yml exec backend \
+              python manage.py collectstatic
 
-          sudo docker compose \
-            -f docker-compose.production.yml exec \
-            backend python manage.py migrate
-
-          sudo docker compose \
-            -f docker-compose.production.yml exec \
-            backend python manage.py collectstatic
-
-          sudo docker compose \
-            -f docker-compose.production.yml exec \
-            backend cp -r /app/collected_static/. \
-            /backend_static/static/
+            sudo docker compose -f docker-compose.production.yml exec backend \
+              cp -r /app/collected_static/. /backend_static/static/
